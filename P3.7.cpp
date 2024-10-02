@@ -1,37 +1,22 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <omp.h>
 
-#define NUM_POINTS 1000000  
-
 int main() {
-    int count = 0;
+    int n, i;
+    double pi = 3.0;
+    
+    printf("Enter number of iterations: ");
+    scanf("%d", &n);
 
-    #pragma omp parallel
-    {
-        int local_count = 0; 
-        unsigned int seed = omp_get_thread_num(); 
-
-        #pragma omp for
-        for (int i = 0; i < NUM_POINTS; i++) {
-            
-            double x = (double)rand() / RAND_MAX; 
-            double y = (double)rand() / RAND_MAX; 
-
-           
-            if (x * x + y * y <= 1.0) {
-                local_count++;
-            }
-        }
-
-        #pragma omp atomic
-        count += local_count; 
+    #pragma omp parallel for reduction(+:pi)
+    for (i = 1; i <= n; i++) {
+        double term = 4.0 / ((2.0 * i) * (2.0 * i + 1) * (2.0 * i + 2));
+        if (i % 2 == 0)
+            pi -= term;
+        else
+            pi += term;
     }
 
-   
-    double pi = 4.0 * count / NUM_POINTS;
-    printf("Estimated value of pi: %f\n", pi);
-
+    printf("Approximation of Pi: %.15f\n", pi);
     return 0;
 }
-
