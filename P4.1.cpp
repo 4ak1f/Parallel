@@ -25,7 +25,7 @@ void Fib(int n){
 }
 int main(){
 	int n;
-	printf("Enter the number of elements in the series: ");
+	printf("Enter element: ");
 	scanf("%d",&n);
 	Fib(n);
 	return 0;
