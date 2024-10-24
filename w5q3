@@ -1,34 +1,48 @@
+
 #include <stdio.h>
+#include <stdlib.h>
 #include <omp.h>
 
-#define SIZE 1000
+void initialize_array(int *array, int n) {
+    // Declare loop variable beforehand
+    int i;
+
+    #pragma omp parallel firstprivate(n) private(i)
+    {
+        // Get the number of threads and calculate chunk size
+        int num_threads = omp_get_num_threads();
+        int chunk_size = n / num_threads;
+
+        // Calculate the start and end values for each thread
+        int thread_id = omp_get_thread_num();
+        int start_value = thread_id * chunk_size + 1;
+        int last_value = start_value + chunk_size - 1;
+
+        // Ensure that the last thread handles any remaining elements
+        if (thread_id == num_threads - 1) {
+            last_value = n; // The last thread should go up to n
+        }
+
+        // Initialize the array chunk
+        for (i = start_value; i <= last_value; i++) {
+            array[i - 1] = i; // Fill the array (0-based index)
+        }
+
+        // Capture the last initialized value (if needed)
+        #pragma omp critical
+        {
+            printf("Thread %d initialized up to %d\n", thread_id, last_value);
+        }
+    } // End of parallel region
+}
 
 int main() {
-    int arr[SIZE];
+    int n = 100,i; // Size of the array
+    int *array = (int *)malloc(n * sizeof(int));
 
-    #pragma omp parallel firstprivate(arr)
-    {
-        int thread_id = omp_get_thread_num();
-        int chunk_size = SIZE / omp_get_num_threads(); // Calculate chunk size
-        int start_value = thread_id * chunk_size + 1; // Starting value for this thread
-        int end_value = start_value + chunk_size - 1; // Last value for this thread
-        int last_value,i; // To capture the last initialized value
+    initialize_array(array, n);
 
-        #pragma omp for nowait
-        for ( i = start_value; i < end_value; i++) {
-            arr[i - 1] = i; // Initialize the array (0-based index)
-            last_value = i; // Capture the last initialized value
-        }
-
-        #pragma omp lastprivate(last_value)
-        {
-            printf("Thread %d initialized up to value %d\n", thread_id, last_value);
-        }
+    // Print the array (optional)
+    for ( i = 0; i < n; i++) {
+        printf("%d ", array[i]);
     }
-
-
-    printf("First element: %d\n", arr[0]);
-    printf("Last element: %d\n", arr[SIZE - 1]);
-
-    return 0;
-}
