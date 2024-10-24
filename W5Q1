@@ -3,7 +3,7 @@
 #include <omp.h>
 #include <time.h>
 
-#define ARRAY_SIZE 100000000 // Size of the large array
+#define ARRAY_SIZE 1000000 
 
 // Function to compute the sum of an array sequentially
 long long sequential_sum(int *array, int size) {
