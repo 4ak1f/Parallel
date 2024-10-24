@@ -1,45 +1,58 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <omp.h>
 
-#define SIZE 10000
+void double_array(int *array, int n) {
+    int num_threads, chunk_size,i;
 
-int main() {
-    int array[SIZE],i;
-    
-    for ( i = 0; i < SIZE; i++) {
-        array[i] = i;
-    }
-
-    // Define the number of threads
-    int num_threads = 4;
-
-    // Set the number of threads
-    omp_set_num_threads(num_threads);
-
-    #pragma omp parallel firstprivate(num_threads) shared(array)
+    #pragma omp parallel firstprivate(n, chunk_size) private(num_threads)
     {
+        // Get the number of threads and calculate chunk size
+        num_threads = omp_get_num_threads();
+        chunk_size = n / num_threads;
+
+        // Calculate the starting index for each thread
         int thread_id = omp_get_thread_num();
-        int chunk_size = SIZE / num_threads;
         int start_index = thread_id * chunk_size;
-        int end_index = (thread_id == num_threads - 1) ? SIZE : start_index + chunk_size;
+        int end_index = start_index + chunk_size - 1;
 
-        // Lastprivate variable to capture the last processed index
-        int last_processed_index = end_index - 1;
-
-        // Double the values in the assigned portion of the array
-        for ( i = start_index; i < end_index; i++) {
-            array[i] *= 2;
+        // Handle the last thread's case for odd sizes
+        if (thread_id == num_threads - 1) {
+            end_index = n - 1; // Last thread processes remaining elements
         }
 
-        #pragma omp single nowait
+        // Double the values in the assigned chunk
+        for ( i = start_index; i <= end_index; i++) {
+            array[i] *= 2; // Double the value
+        }
+
+        // Capture the last processed index for each thread
+        int last_processed_index = end_index;
+
+        //  print out the last processed index in a critical section
+        #pragma omp critical
         {
             printf("Thread %d processed up to index %d\n", thread_id, last_processed_index);
         }
     }
+}
 
-    for ( i = 0; i < 100; i++) {
-        printf("array[%d] = %d\n", i, array[i]);
+int main() {
+    int n = 100,i; // Size of the array
+    int *array = (int *)malloc(n * sizeof(int));
+
+    // Initialize the array with some values
+    for ( i = 0; i < n; i++) {
+        array[i] = i + 1; // Fill with values 1 to n
     }
 
+    double_array(array, n);
+
+    for ( i = 0; i < n; i++) {
+        printf("%d ", array[i]);
+    }
+    printf("\n");
+
+    free(array);
     return 0;
 }
