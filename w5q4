@@ -1,12 +1,11 @@
 #include <stdio.h>
 #include <omp.h>
 
-#define SIZE 10000  // Define the size of the array
+#define SIZE 10000
 
 int main() {
     int array[SIZE],i;
     
-    // Initialize the array with values
     for ( i = 0; i < SIZE; i++) {
         array[i] = i;
     }
@@ -17,7 +16,6 @@ int main() {
     // Set the number of threads
     omp_set_num_threads(num_threads);
 
-    // Parallel region
     #pragma omp parallel firstprivate(num_threads) shared(array)
     {
         int thread_id = omp_get_thread_num();
@@ -33,14 +31,12 @@ int main() {
             array[i] *= 2;
         }
 
-        // Using lastprivate to capture the last processed index
         #pragma omp single nowait
         {
             printf("Thread %d processed up to index %d\n", thread_id, last_processed_index);
         }
     }
 
-    // Print some results to verify (optional)
     for ( i = 0; i < 100; i++) {
         printf("array[%d] = %d\n", i, array[i]);
     }
