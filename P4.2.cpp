@@ -2,7 +2,7 @@
 #include <omp.h>
 
 int main() {
-    int number;
+    int number,i;
     long long result = 1;
 
     printf("Enter a positive integer: ");
@@ -12,7 +12,7 @@ int main() {
         printf("Factorial is not defined for negative numbers.\n");
     } else {
         #pragma omp parallel for reduction(* : result)
-        for (int i = 1; i <= number; i++) {
+        for ( i = 1; i <= number; i++) {
             result *= i;
         }
 
