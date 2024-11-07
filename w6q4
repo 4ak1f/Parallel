@@ -1,0 +1,50 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <omp.h>
+#include <time.h>
+
+int count_occurrences(int* arr, int size, int value) {
+    int count = 0;
+    for (int i = 0; i < size; i++) {
+        if (arr[i] == value) {
+            count++;
+        }
+    }
+    return count;
+}
+
+int count_occurrences_parallel(int* arr, int size, int value) {
+    int count = 0;
+    #pragma omp parallel for reduction(+:count)
+    for (int i = 0; i < size; i++) {
+        if (arr[i] == value) {
+            count++;
+        }
+    }
+    return count;
+}
+
+int main() {
+    int size = 100000000;
+    int value = 7;
+    int* arr = (int*)malloc(size * sizeof(int));
+    for (int i = 0; i < size; i++) {
+        arr[i] = rand() % 10;
+    }
+
+    clock_t start_seq = clock();
+    int count_seq = count_occurrences(arr, size, value);
+    clock_t end_seq = clock();
+    printf("Sequential count: %d\n", count_seq);
+    printf("Time taken (Sequential): %lf seconds\n", (double)(end_seq - start_seq) / CLOCKS_PER_SEC);
+
+    omp_set_num_threads(4);
+    double start_par = omp_get_wtime();
+    int count_par = count_occurrences_parallel(arr, size, value);
+    double end_par = omp_get_wtime();
+    printf("Parallel count: %d\n", count_par);
+    printf("Time taken (Parallel): %lf seconds\n", end_par - start_par);
+
+    free(arr);
+    return 0;
+}
