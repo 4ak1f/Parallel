@@ -1,0 +1,50 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <omp.h>
+#include <time.h>
+
+void sequential_work(int N) {
+    double sum = 0.0;
+    int i;
+    for ( i = 0; i < N; i++) {
+        sum += (i * 3.14);
+    }
+}
+
+void parallel_work(int N) {
+    double sum = 0.0;
+    int i;
+    #pragma omp parallel for reduction(+:sum)
+    for ( i = 0; i < N; i++) {
+        sum += (i * 3.14);
+    }
+}
+
+int main() {
+    int N = 100000000;
+    int sequential_size = N * 0.3;
+    int parallel_size = N * 0.7;
+
+    double start_time = omp_get_wtime();
+    sequential_work(sequential_size);
+    double end_time = omp_get_wtime();
+    double sequential_time = end_time - start_time;
+
+    start_time = omp_get_wtime();
+    parallel_work(parallel_size);
+    end_time = omp_get_wtime();
+    double parallel_time = end_time - start_time;
+
+    double total_time = sequential_time + parallel_time;
+    int num_threads = 4;
+    double predicted_speedup = 1.0 / ((1 - 0.7) + (0.7 / num_threads));
+    double actual_speedup = (sequential_time + parallel_time) / total_time;
+
+    printf("Sequential work time: %f seconds\n", sequential_time);
+    printf("Parallel work time: %f seconds\n", parallel_time);
+    printf("Total time: %f seconds\n", total_time);
+    printf("Predicted speedup (Amdahl's Law): %f\n", predicted_speedup);
+    printf("Actual speedup: %f\n", actual_speedup);
+
+    return 0;
+}
