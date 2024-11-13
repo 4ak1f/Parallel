@@ -1,0 +1,53 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <omp.h>
+#include <time.h>
+
+#define MAX_VAL 100
+
+void count_frequencies(int *arr, int n, int *freq) {
+    #pragma omp parallel for
+    for (int i = 0; i < n; i++) {
+        #pragma omp atomic
+        freq[arr[i]]++;
+    }
+}
+
+int main() {
+    int n = 1000000;
+    int *arr = (int *)malloc(n * sizeof(int));
+    int *freq = (int *)calloc(MAX_VAL, sizeof(int));
+    double start_time, end_time;
+
+    srand(time(NULL));
+    for (int i = 0; i < n; i++) {
+        arr[i] = rand() % MAX_VAL;
+    }
+
+    start_time = omp_get_wtime();
+    count_frequencies(arr, n, freq);
+    end_time = omp_get_wtime();
+    printf("Parallel execution time: %f seconds\n", end_time - start_time);
+
+    for (int i = 0; i < MAX_VAL; i++) {
+        if (freq[i] > 0) {
+            printf("Value %d occurs %d times.\n", i, freq[i]);
+        }
+    }
+
+    int *seq_freq = (int *)calloc(MAX_VAL, sizeof(int));
+    start_time = omp_get_wtime();
+
+    for (int i = 0; i < n; i++) {
+        seq_freq[arr[i]]++;
+    }
+
+    end_time = omp_get_wtime();
+    printf("Sequential execution time: %f seconds\n", end_time - start_time);
+
+    free(arr);
+    free(freq);
+    free(seq_freq);
+
+    return 0;
+}
