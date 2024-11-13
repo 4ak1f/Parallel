@@ -1,0 +1,130 @@
+#include <iostream>
+#include <cstdlib>
+#include <ctime>
+#include <omp.h>
+#include <cmath>
+
+using namespace std;
+
+// Helper function to compare and swap elements
+void bitonicCompare(int* array, int i, int j, bool dir) {
+    if (dir == (array[i] > array[j])) {
+        // Swap if they are in the wrong order
+        int temp = array[i];
+        array[i] = array[j];
+        array[j] = temp;
+    }
+}
+
+// Merge function: Merges two bitonic sequences in parallel
+void bitonicMerge(int* array, int low, int cnt, bool dir) {
+    if (cnt > 1) {
+        int k = cnt / 2;
+        
+        // Parallelize the comparison and swap for each pair in this segment
+        #pragma omp parallel for
+        for (int i = low; i < low + k; i++) {
+            bitonicCompare(array, i, i + k, dir);
+        }
+
+        // Recursively merge subarrays
+        bitonicMerge(array, low, k, dir);
+        bitonicMerge(array, low + k, k, dir);
+    }
+}
+
+// Bitonic sort function that recursively sorts the array
+void bitonicSort(int* array, int low, int cnt, bool dir) {
+    if (cnt > 1) {
+        int k = cnt / 2;
+        
+        // Sort in parallel the first half (increasing) and the second half (decreasing)
+        #pragma omp parallel sections
+        {
+            #pragma omp section
+            bitonicSort(array, low, k, true); // Sort first half in ascending order
+            
+            #pragma omp section
+            bitonicSort(array, low + k, k, false); // Sort second half in descending order
+        }
+        
+        // Merge the entire sequence
+        bitonicMerge(array, low, cnt, dir);
+    }
+}
+
+// Function to print the array
+void printArray(int* array, int n) {
+    for (int i = 0; i < n; i++) {
+        cout << array[i] << " ";
+    }
+    cout << endl;
+}
+
+// Function to check if the array is sorted
+bool isSorted(int* array, int n) {
+    for (int i = 1; i < n; i++) {
+        if (array[i - 1] > array[i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+int main() {
+    const int N = 1024; // Size of the array
+    int* array = new int[N];
+    
+    // Seed for random number generation
+    srand(time(0));
+
+    // Initialize the array with random integers
+    for (int i = 0; i < N; i++) {
+        array[i] = rand() % 10000;
+    }
+
+    // Print the unsorted array
+    // cout << "Unsorted array:" << endl;
+    // printArray(array, N);
+
+    // Time the parallel Bitonic Sort
+    double start_time = omp_get_wtime();
+    
+    bitonicSort(array, 0, N, true);
+
+    double end_time = omp_get_wtime();
+    double parallel_time = end_time - start_time;
+
+    // Print the sorted array (optional)
+    // cout << "Sorted array using Parallel Bitonic Sort:" << endl;
+    // printArray(array, N);
+
+    // Check if the array is sorted
+    if (isSorted(array, N)) {
+        cout << "Array is sorted correctly!" << endl;
+    } else {
+        cout << "Array is NOT sorted!" << endl;
+    }
+
+    cout << "Parallel Bitonic Sort took: " << parallel_time << " seconds" << endl;
+
+    // Compare with sequential bitonic sort
+    int* seqArray = new int[N];
+    // Copy the original array
+    memcpy(seqArray, array, sizeof(int) * N);
+
+    start_time = omp_get_wtime();
+    bitonicSort(seqArray, 0, N, true); // Sequential execution
+    end_time = omp_get_wtime();
+    double sequential_time = end_time - start_time;
+
+    // Print performance comparison
+    cout << "Sequential Bitonic Sort took: " << sequential_time << " seconds" << endl;
+    cout << "Speedup = " << sequential_time / parallel_time << endl;
+
+    // Cleanup
+    delete[] array;
+    delete[] seqArray;
+
+    return 0;
+}
